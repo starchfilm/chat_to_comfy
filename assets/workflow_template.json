@@ -1,0 +1,135 @@
+{
+  "name": "Anime Character Workflow",
+  "description": "二次元角色生成标准 Workflow，基于 NovelAI/Anything 模型",
+  "version": "1.0",
+  "nodes": {
+    "checkpoint_loader": {
+      "class_type": "CheckpointLoaderSimple",
+      "inputs": {
+        "ckpt_name": "put_your_model_here.safetensors"
+      },
+      "output": ["model", "clip", "vae"]
+    },
+    "lora_loader": {
+      "class_type": "LoraLoader",
+      "inputs": {
+        "model": ["checkpoint_loader", "model"],
+        "clip": ["checkpoint_loader", "clip"],
+        "lora_name": "put_your_lora_here.safetensors",
+        "strength_model": 0.7,
+        "strength_clip": 0.7
+      },
+      "output": ["model", "clip"]
+    },
+    "positive_clip": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "clip": ["lora_loader", "clip"],
+        "text": "masterpiece, best quality, high quality, ultra detailed, absurdres\nanime style, colorful, detailed background\n1girl, solo, full body, standing\nblonde hair, long hair, wavy hair, twintails\nblue eyes, beautiful detailed eyes\nsmile, blush\nwhite shirt, black skirt, red ribbon\noutdoors, cherry blossoms, blue sky, school\nsunlight, wind, soft lighting, from below"
+      },
+      "output": ["conditioning"]
+    },
+    "negative_clip": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "clip": ["checkpoint_loader", "clip"],
+        "text": "worst quality, low quality, normal quality\nbad anatomy, bad hands, bad proportions\nextra digits, fewer digits, missing fingers\nmissing limbs, extra limbs, floating limbs\ndeformed, disfigured, mutated\nblurry, out of focus, lowres\ntext, watermark, signature, username\ncropped, worst feet, extra ears"
+      },
+      "output": ["conditioning"]
+    },
+    "ksampler": {
+      "class_type": "KSampler",
+      "inputs": {
+        "model": ["lora_loader", "model"],
+        "seed": 0,
+        "steps": 28,
+        "cfg": 7.0,
+        "sampler_name": "dpmpp_2m_karras",
+        "scheduler": "normal",
+        "positive": ["positive_clip", "conditioning"],
+        "negative": ["negative_clip", "conditioning"]
+      },
+      "output": ["LATENT"]
+    },
+    "empty_latent": {
+      "class_type": "EmptyLatentImage",
+      "inputs": {
+        "width": 512,
+        "height": 768,
+        "batch_size": 1
+      },
+      "output": ["LATENT"]
+    },
+    "vae_decode": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": ["ksampler", "LATENT"],
+        "vae": ["checkpoint_loader", "vae"]
+      },
+      "output": ["IMAGE"]
+    },
+    "save_image": {
+      "class_type": "SaveImage",
+      "inputs": {
+        "images": ["vae_decode", "IMAGE"],
+        "filename_prefix": "anime_character"
+      }
+    }
+  },
+  "connections": [
+    ["checkpoint_loader", "model", "lora_loader", "model"],
+    ["checkpoint_loader", "clip", "lora_loader", "clip"],
+    ["lora_loader", "model", "ksampler", "model"],
+    ["lora_loader", "clip", "positive_clip", "clip"],
+    ["lora_loader", "clip", "negative_clip", "clip"],
+    ["positive_clip", "conditioning", "ksampler", "positive"],
+    ["negative_clip", "conditioning", "ksampler", "negative"],
+    ["ksampler", "LATENT", "vae_decode", "samples"],
+    ["checkpoint_loader", "vae", "vae_decode", "vae"],
+    ["vae_decode", "IMAGE", "save_image", "images"]
+  ],
+  "settings": {
+    "resolution": "512x768",
+    "recommended_sampler": "DPM++ 2M Karras",
+    "recommended_steps": "28-35",
+    "recommended_cfg": "7-9",
+    "lora_weight_range": "0.5-0.8",
+    "comfyui_version": "1.x"
+  },
+  "instructions": {
+    "en": {
+      "title": "Anime Character Generation Workflow",
+      "steps": [
+        "1. Replace 'put_your_model_here.safetensors' with your NovelAI/Anything model path",
+        "2. Replace 'put_your_lora_here.safetensors' with your character LoRA path",
+        "3. Modify the positive prompt to match your character description",
+        "4. Adjust LoRA strength_model (0.5-0.8 recommended for characters)",
+        "5. Set your desired seed or leave at 0 for random",
+        "6. Run the workflow"
+      ],
+      "tips": [
+        "For more detail, increase steps to 35",
+        "For more creativity, increase CFG to 9",
+        "For stronger character resemblance, increase LoRA weight",
+        "For more variation, change the seed"
+      ]
+    },
+    "zh": {
+      "title": "二次元角色生成 Workflow",
+      "steps": [
+        "1. 将 'put_your_model_here.safetensors' 替换为你的 NovelAI/Anything 模型路径",
+        "2. 将 'put_your_lora_here.safetensors' 替换为你的角色 LoRA 路径",
+        "3. 修改正向提示词以匹配你的角色描述",
+        "4. 调整 LoRA strength_model（推荐 0.5-0.8）",
+        "5. 设置你想要的种子，或留 0 随机",
+        "6. 运行工作流"
+      ],
+      "tips": [
+        "想要更多细节？将步数增加到 35",
+        "想要更有创意？将 CFG 增加到 9",
+        "想要角色更像？增加 LoRA 权重",
+        "想要更多变化？换一个种子"
+      ]
+    }
+  }
+}

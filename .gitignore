@@ -1,0 +1,20 @@
+# User-specific config (contains local paths)
+config.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# ComfyUI output (user-generated images)
+output/
