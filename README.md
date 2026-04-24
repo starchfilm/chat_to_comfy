@@ -1,4 +1,6 @@
-# Anime AIGC Workflow
+# Chat to Comfy
+
+English | [中文](README_CN.md)
 
 An AI-powered anime image generation workflow skill for [WorkBuddy](https://www.codebuddy.cn/) (or any OpenClaw-compatible AI coding assistant). Search reference images, find LoRA models, craft structured prompts, and generate images via ComfyUI API — all through natural language.
 
